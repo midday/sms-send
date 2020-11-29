@@ -13,9 +13,9 @@
 			<button class="btn" type="default" @click="clickSendBtn">发送，下一个</button>
 		</view>
 		<view class="btn-wrap">
-			<button class="btn" type="primary" @click="templateContent = item.content" v-for="item in templateList" :key="item._id">{{item.name}}</button>
+			<button class="btn" :type="index === currentTemplateIndex ? 'primary' : 'default'" @click="setTemplateIndex(index)" v-for="(item, index) in templateList" :key="item._id">{{item.name}}</button>
 		</view>
-		<textarea class="template-content" placeholder="模板内容" v-model="templateContent" />
+		<textarea class="template-content" placeholder="模板内容" @blur="updateTemplate" v-model="templateList[currentTemplateIndex].content" />
 		</view>
 </template>
 
@@ -26,8 +26,21 @@
 				userInfo: {}, // 用户信息
 				phoneInfo: {}, // 手机信息
 				salutation: '',// 称呼
-				templateContent: '',// 模板内容
-				templateList: []// 模板列表
+				templateList: [
+					{
+						name: '模板1',
+						content: ''
+					},
+					{
+						name: '模板2',
+						content: ''
+					},
+					{
+						name: '模板3',
+						content: ''
+					}
+				],// 模板列表
+				currentTemplateIndex: 0, // 当前模板ID
 			}
 		},
 		onNavigationBarButtonTap() {
@@ -39,6 +52,12 @@
 		},
 		created() {
 			this.userInfo = uni.getStorageSync('userInfo') || {}
+			const templateIndex = uni.getStorageSync('templateIndex')
+			if (typeof templateIndex !== 'number') {
+				this.setTemplateIndex(0)
+			} else {
+				this.currentTemplateIndex = templateIndex
+			}
 			this.getTemplateList()
 		},
 		computed: {
@@ -55,6 +74,40 @@
 					});
 				}
 			},
+			// 设置模板索引
+			setTemplateIndex(index) {
+				this.currentTemplateIndex = index
+				uni.setStorageSync('templateIndex', index)
+			},
+			// 更新模板
+			updateTemplate() {
+				uni.request({
+					url: 'http://175.24.113.82:7001/api/updateTemplate',
+					header: {
+						'Authorization': this.userInfo.token
+					},
+					data: {
+						phoneNumber: this.userInfo.username,
+						...this.templateList[this.currentTemplateIndex]
+					},
+					method: 'POST',
+					dataType: 'json',
+					success: (res) => {
+						const { code, data, msg } = res.data
+						if(code === 0) {
+						} else {
+							if (code === 401) {
+								this.jumpLoginPage()
+							} else {
+								uni.showToast({
+									title: msg,
+									icon: 'none'
+								});
+							}
+						}
+					},
+				});
+			},
 			// 获取模板列表
 			getTemplateList() {
 				uni.request({
@@ -64,7 +117,8 @@
 					},
 					data: {
 						pageNo: 1,
-						pageSize: 100
+						pageSize: 100,
+						phoneNumber: this.userInfo.username
 					},
 					method: 'POST',
 					dataType: 'json',
@@ -72,9 +126,6 @@
 						const { code, data, msg } = res.data
 						if(code === 0) {
 							this.templateList = data.data
-							if (this.templateList.length > 0) {
-								this.templateContent = this.templateList[0].content
-							}
 						} else {
 							if (code === 401) {
 								this.jumpLoginPage()
@@ -114,7 +165,6 @@
 			// 点击不发送按钮
 			clickNotSendBtn() {
 				if (this.phoneInfo.phoneNumber) {
-					debugger
 					this.updatePhone({
 						...this.phoneInfo,
 						status: 'INVALID'

@@ -9,6 +9,7 @@
 						{
 							"text": "退出",
 							"fontSize": "16px",
+							"marginRight": "10px",
 							"background": "#fff",
 							"color": "#e4663e",
 							"fontWeight": "bold",
