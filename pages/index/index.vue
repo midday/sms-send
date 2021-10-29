@@ -68,9 +68,9 @@
 		methods: {
 			// 复制手机号码
 			copyPhoneNumber() {
-				if (this.phoneNumber) {
+				if (this.phoneInfo.phoneNumber) {
 					uni.setClipboardData({
-						data: this.phoneNumber
+						data: this.phoneInfo.phoneNumber
 					});
 				}
 			},
@@ -143,8 +143,8 @@
 			sendMessage() {
 				if (uni.getSystemInfoSync().platform === 'android') {
 					const msg = plus.messaging.createMessage(plus.messaging.TYPE_SMS);
-					msg.to = ['18612186696'];
-					msg.body = this.salutation + this.templateContent;
+					msg.to = [this.phoneInfo.phoneNumber];
+					msg.body = this.salutation + this.templateList[this.currentTemplateIndex].content,
 					plus.messaging.sendMessage( msg );
 				}
 			},
@@ -154,13 +154,14 @@
 					this.sendMessage()
 					this.updatePhone({
 						...this.phoneInfo,
-						sendPhoneNumber: this.username,
-						sendContent: this.salutation + this.templateContent,
+						sendPhoneNumber: this.userInfo.username,
+						sendContent: this.salutation + this.templateList[this.currentTemplateIndex].content,
 						sendTime: new Date(),
 						status: 'SENDED'
 					})
+				} else {
+					this.getNextPhoneNumber()
 				}
-				this.getNextPhoneNumber()
 			},
 			// 点击不发送按钮
 			clickNotSendBtn() {
@@ -169,8 +170,9 @@
 						...this.phoneInfo,
 						status: 'INVALID'
 					})
+				} else {
+					this.getNextPhoneNumber()
 				}
-				this.getNextPhoneNumber()
 			},
 			// 获取下一个电话号码
 			getNextPhoneNumber() {
